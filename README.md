@@ -20,10 +20,11 @@ local y errores, y tomar decisiones de arquitectura ante información no explíc
 
 | Funcionalidad | Estado |
 |---|---|
-| Autenticación (login) | Planificado |
-| Persistencia de sesión (token) | Planificado |
-| Validación de sesión con `GET /auth/me` | Planificado |
-| Logout | Planificado |
+| Autenticación (login) | Completado |
+| Persistencia de sesión (token) | Completado |
+| Validación de sesión con `GET /auth/me` | Completado |
+| Logout | Completado |
+| Protección de rutas según sesión | Completado |
 | Listado de productos (pagínado / scroll infinito) | Planificado |
 | Búsqueda de productos | Planificado |
 | Filtro por categoría | Planificado |
@@ -39,16 +40,14 @@ local y errores, y tomar decisiones de arquitectura ante información no explíc
 
 ## Stack tecnológico
 
-| Componente | Tecnología |
-|---|---|
-| Framework | Flutter 3.x (stable) + Dart null-safety |
-| State management | Riverpod |
-| HTTP | Dio |
-| Navegación | GoRouter |
-| Token seguro | flutter_secure_storage |
-| Favoritos locales | shared_preferences |
-
-> Las versiones exactas de cada paquete se fijan en la FASE 1 según el SDK instalado (Flutter 3.47.0 / Dart 3.13.0).
+| Componente | Tecnología | Versión |
+|---|---|---|
+| Framework | Flutter (stable) + Dart null-safety | 3.47.0 / 3.13.0 |
+| State management | Riverpod | 3.4.3 |
+| HTTP | Dio | 5.11.1 |
+| Navegación | GoRouter | 18.0.1 |
+| Token seguro | flutter_secure_storage | 10.3.1 |
+| Favoritos locales | shared_preferences | 2.5.5 |
 
 ## Arquitectura
 
@@ -66,7 +65,7 @@ data → domain → presentation
 
 Se aplica **Repository Pattern** y **SOLID** de forma pragmática, sin sobrearquitectura.
 
-## Estructura del proyecto prevista
+## Estructura del proyecto
 
 ```
 lib/
@@ -87,7 +86,36 @@ lib/
     └── profile/   (data, domain, presentation)
 ```
 
-> La creación física de esta estructura corresponde a la **FASE 1**. En la FASE 0 solo se documenta.
+> La estructura física se creó en la **FASE 1**. La carpeta `features/auth` se implementó en la
+> **FASE 2** (autenticación y sesión). Las carpetas `products`, `favorites` y `profile` están
+> preparadas (vacías) para las siguientes fases.
+
+## Autenticación
+
+- **Login** (`POST /auth/login`): la pantalla de login envía usuario y contraseña, guarda el token
+  de forma segura y restaura el usuario autenticado.
+- **Sesión persistente**: el token se almacena en `flutter_secure_storage`. Al abrir la app se
+  valida contra `GET /auth/me`; si es inválido (401) el token se elimina y se vuelve al login.
+- **Logout**: elimina el token y devuelve al login.
+- **Rutas protegidas**: con GoRouter, un usuario no autenticado no puede acceder a la pantalla
+  principal; el router redirige según el estado de autenticación.
+
+## Ejecución
+
+Requisitos: Flutter 3.47+ y Android SDK (para el target principal).
+
+```bash
+flutter pub get
+flutter run
+```
+
+Para generar un APK de debug:
+
+```bash
+flutter build apk --debug
+```
+
+El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
 
 ## Decisiones técnicas iniciales
 
@@ -95,7 +123,11 @@ lib/
   ideal para estados asíncronos.
 - **Dio**: interceptors para el token y el manejo centralizado de errores, con timeouts configurables.
 - **GoRouter**: navegación declarativa con redirección basada en autenticación.
-- **flutter_secure_storage**: el token se guarda de forma segura (Keychain/Keystore).
+- **flutter_secure_storage (10.3.1)**: el token se guarda de forma segura (Keychain/Keystore).
+  Se usa la versión 10.x (en lugar de la 11.x) porque la 11.0.0 exige `compileSdk = 37`,
+  incompatible con el AGP 9.1.0 / compileSdk 36 actuales. La 10.3.1 compila contra SDK 36 sin
+  modificar la configuración nativa de Android. Se puede actualizar a 11.x cuando el entorno
+  soporte SDK 37.
 - **shared_preferences**: los favoritos se guardan como JSON de clave-valor.
 - **Rol simulado**: se deriva del `id` del usuario (`GET /auth/me`); id par = admin, id impar = estándar.
 - **Favoritos offline**: se guarda un snapshot completo del producto, no solo el id, para poder
@@ -132,14 +164,19 @@ lib/
 
 ## Estado del proyecto
 
-**FASE 0 — Análisis, contexto y documentación inicial.** En curso.
+**FASE 2 — Autenticación y sesión.** Completada.
 
-- [x] Análisis de la prueba y la API
-- [x] Contrato técnico interno (PROJECT_CONTEXT.md)
-- [ ] Bootstrap y arquitectura base (FASE 1)
-- [ ] Funcionalidades (FASES 2–8)
-- [ ] Calidad y revisión (FASE 9)
-- [ ] Tests (FASE 10)
-- [ ] Documentación final (FASE 11)
+- [x] FASE 0 — Análisis y documentación inicial
+- [x] FASE 1 — Bootstrap y arquitectura base
+- [x] FASE 2 — Autenticación y sesión (login, token seguro, `/auth/me`, logout, rutas protegidas)
+- [ ] FASE 3 — Listado de productos y paginación
+- [ ] FASE 4 — Búsqueda, categorías, refresh y estados de UI
+- [ ] FASE 5 — Detalle de producto y favoritos
+- [ ] FASE 6 — Persistencia/offline de favoritos
+- [ ] FASE 7 — Roles y eliminación de productos
+- [ ] FASE 8 — Perfil e integración completa
+- [ ] FASE 9 — Errores, lifecycle, calidad y revisión
+- [ ] FASE 10 — Tests
+- [ ] FASE 11 — Documentación final
 
-> Todas las funcionalidades están marcadas como **Planificado**. Aún no se ha implementado código.
+> Funcionalidades de productos, favoritos, perfil y roles siguen marcadas como **Planificado**.
