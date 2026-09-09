@@ -25,11 +25,11 @@ local y errores, y tomar decisiones de arquitectura ante información no explíc
 | Validación de sesión con `GET /auth/me` | Completado |
 | Logout | Completado |
 | Protección de rutas según sesión | Completado |
-| Listado de productos (pagínado / scroll infinito) | Planificado |
+| Listado de productos (pagínado / scroll infinito) | Completado |
 | Búsqueda de productos | Planificado |
 | Filtro por categoría | Planificado |
 | Pull-to-refresh | Planificado |
-| Estados de carga / error / vacío | Planificado |
+| Estados de carga / error / vacío | Completado |
 | Detalle de producto | Planificado |
 | Favoritos (toggle) | Planificado |
 | Favoritos offline | Planificado |
@@ -87,8 +87,8 @@ lib/
 ```
 
 > La estructura física se creó en la **FASE 1**. La carpeta `features/auth` se implementó en la
-> **FASE 2** (autenticación y sesión). Las carpetas `products`, `favorites` y `profile` están
-> preparadas (vacías) para las siguientes fases.
+> **FASE 2** (autenticación y sesión) y `features/products` en la **FASE 3** (listado + paginación).
+> Las carpetas `favorites` y `profile` están preparadas (vacías) para las siguientes fases.
 
 ## Autenticación
 
@@ -99,6 +99,16 @@ lib/
 - **Logout**: elimina el token y devuelve al login.
 - **Rutas protegidas**: con GoRouter, un usuario no autenticado no puede acceder a la pantalla
   principal; el router redirige según el estado de autenticación.
+
+## Productos
+
+- **Listado** (`GET /products`): la pantalla principal (tras autenticarse) muestra los productos
+  en una cuadrícula de 2 columnas (imagen, título, precio, rating).
+- **Paginación / infinite scroll**: se usa `limit` y `skip`. Al acercarse al final de la lista se
+  carga la página siguiente de forma incremental.
+- **Estados de UI**: carga inicial, error inicial (con reintentar), lista vacía, carga de página
+  adicional, error al cargar más (con reintentar) y "no hay más productos".
+- **Modelos tipados**: `Product` y `ProductsPage` (dominio) con DTOs en la capa de datos.
 
 ## Ejecución
 
@@ -164,12 +174,12 @@ El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
 
 ## Estado del proyecto
 
-**FASE 2 — Autenticación y sesión.** Completada.
+**FASE 3 — Listado de productos y paginación.** Completada.
 
 - [x] FASE 0 — Análisis y documentación inicial
 - [x] FASE 1 — Bootstrap y arquitectura base
 - [x] FASE 2 — Autenticación y sesión (login, token seguro, `/auth/me`, logout, rutas protegidas)
-- [ ] FASE 3 — Listado de productos y paginación
+- [x] FASE 3 — Listado de productos y paginación (infinite scroll, estados de UI)
 - [ ] FASE 4 — Búsqueda, categorías, refresh y estados de UI
 - [ ] FASE 5 — Detalle de producto y favoritos
 - [ ] FASE 6 — Persistencia/offline de favoritos
@@ -179,4 +189,4 @@ El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
 - [ ] FASE 10 — Tests
 - [ ] FASE 11 — Documentación final
 
-> Funcionalidades de productos, favoritos, perfil y roles siguen marcadas como **Planificado**.
+> Búsqueda, categorías, detalle, favoritos, perfil y roles siguen marcadas como **Planificado**.
