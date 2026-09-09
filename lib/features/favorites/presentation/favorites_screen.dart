@@ -10,20 +10,22 @@ class FavoritesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final favorites = ref.watch(favoritesStateProvider);
+    final favoritesState = ref.watch(favoritesStateProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Favoritos')),
-      body: favorites.isEmpty
-          ? const Center(child: Text('No tienes favoritos.'))
-          : ListView.separated(
-              itemCount: favorites.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final product = favorites[index];
-                return _FavoriteTile(product: product);
-              },
-            ),
+      body: !favoritesState.isHydrated
+          ? const Center(child: CircularProgressIndicator())
+          : favoritesState.isEmpty
+              ? const Center(child: Text('No tienes favoritos.'))
+              : ListView.separated(
+                  itemCount: favoritesState.favorites.length,
+                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final product = favoritesState.favorites[index];
+                    return _FavoriteTile(product: product);
+                  },
+                ),
     );
   }
 }

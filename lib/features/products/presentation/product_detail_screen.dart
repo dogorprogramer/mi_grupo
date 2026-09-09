@@ -36,8 +36,8 @@ class _DetailContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final favorites = ref.watch(favoritesStateProvider);
-    final isFavorite = favorites.any((p) => p.id == product.id);
+    final favoritesState = ref.watch(favoritesStateProvider);
+    final isFavorite = favoritesState.isFavorite(product.id);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),

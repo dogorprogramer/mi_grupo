@@ -40,6 +40,36 @@ class ProductDto {
     );
   }
 
+  factory ProductDto.fromDomain(Product product) {
+    return ProductDto(
+      id: product.id,
+      title: product.title,
+      description: product.description,
+      category: product.category,
+      price: product.price,
+      rating: product.rating,
+      stock: product.stock,
+      brand: product.brand,
+      thumbnail: product.thumbnail,
+      images: product.images,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'category': category,
+      'price': price,
+      'rating': rating,
+      'stock': stock,
+      'brand': brand,
+      'thumbnail': thumbnail,
+      'images': images,
+    };
+  }
+
   Product toDomain() {
     return Product(
       id: id,

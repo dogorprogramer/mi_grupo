@@ -32,7 +32,7 @@ local y errores, y tomar decisiones de arquitectura ante información no explíc
 | Estados de carga / error / vacío | Completado |
 | Detalle de producto | Completado |
 | Favoritos (toggle) | Completado |
-| Favoritos offline | Planificado |
+| Favoritos offline/persistentes | Completado |
 | Eliminación de favoritos | Completado |
 | Rol simulado (admin / estándar) con UI condicional | Planificado |
 | Eliminación de producto (admin, simulada) | Planificado |
@@ -144,8 +144,26 @@ lib/
 - **Toggle** desde el listado (icono de corazón sobre cada tarjeta) y desde el detalle.
 - **Pantalla “Favoritos”** (`/favorites`): lista los productos favoritos, permite quitarlos y
   navegar a su detalle; estado vacío cuando no hay favoritos.
-- Se usa una abstracción de dominio (`FavoritesRepository`) con implementación en memoria
-  (`InMemoryFavoritesRepository`), lista para persistir en FASE 6.
+- Se usa una abstracción de dominio (`FavoritesRepository`) con implementación persistente
+  (`SharedPreferencesFavoritesRepository`) sobre `shared_preferences`; `InMemoryFavoritesRepository`
+  se mantiene como test double.
+
+### Persistencia y offline de favoritos (FASE 6)
+
+- **Persistencia local**: los favoritos se guardan en `shared_preferences` bajo la clave
+  `AppConstants.favoritesKey`. Se persiste una representación JSON del producto favorito, no solo
+  su id, para poder **mostrarlos sin conexión**.
+- **Representación almacenada**: cada favorito se serializa con `ProductDto.toJson()`
+  (id, título, descripción, categoría, precio, rating, stock, marca, thumbnail, imágenes).
+- **Hidratación inicial**: al arrancar, `FavoritesNotifier` carga los favoritos persistidos.
+  El estado distingue `isHydrated` para que la pantalla de favoritos no muestre falsamente
+  "No tienes favoritos" antes de terminar de cargar (muestra un spinner mientras hidrata).
+- **Offline**: la lista de favoritos se lee de `shared_preferences` (sin llamadas HTTP); se pueden
+  ver, quitar y (si la info local está disponible) marcar/desmarcar sin conexión.
+- **UI desacoplada**: la UI y `FavoritesNotifier` no conocen `shared_preferences`; solo usan la
+  abstracción `FavoritesRepository` (la implementación vive en `data`).
+- **Errores**: si la persistencia falla o el dato guardado está corrupto, se tratan de forma
+  segura (se ignoran y se muestran estados comprensibles; no se propaga el stack trace).
 
 ## Ejecución
 
@@ -211,20 +229,19 @@ El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
 
 ## Estado del proyecto
 
-**FASE 5 — Detalle de producto y favoritos.** Completada.
+**FASE 6 — Persistencia y favoritos offline.** Completada.
 
 - [x] FASE 0 — Análisis y documentación inicial
 - [x] FASE 1 — Bootstrap y arquitectura base
 - [x] FASE 2 — Autenticación y sesión (login, token seguro, `/auth/me`, logout, rutas protegidas)
 - [x] FASE 3 — Listado de productos y paginación (infinite scroll, estados de UI)
 - [x] FASE 4 — Búsqueda, categorías y refresh (debounce, filtro por categoría, pull-to-refresh)
-- [x] FASE 5 — Detalle de producto y favoritos (en memoria)
-- [ ] FASE 6 — Persistencia/offline de favoritos
+- [x] FASE 5 — Detalle de producto y favoritos
+- [x] FASE 6 — Persistencia/offline de favoritos (shared_preferences)
 - [ ] FASE 7 — Roles y eliminación de productos
 - [ ] FASE 8 — Perfil e integración completa
 - [ ] FASE 9 — Errores, lifecycle, calidad y revisión
 - [ ] FASE 10 — Tests
 - [ ] FASE 11 — Documentación final
 
-> **Pendiente:** persistencia/offline de favoritos (FASE 6), roles/admin, eliminación de
-> productos, perfil.
+> **Pendiente:** roles/admin, eliminación de productos, perfil.
