@@ -54,6 +54,9 @@ class FakeProductsRepository implements ProductsRepository {
   @override
   Future<Product> getProductById(int id) async =>
       throw UnimplementedError();
+
+  @override
+  Future<void> deleteProduct(int id) async {}
 }
 
 ProductsPage page({required int skip, required int count, required int total}) {

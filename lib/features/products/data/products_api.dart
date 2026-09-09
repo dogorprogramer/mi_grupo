@@ -34,6 +34,14 @@ class ProductsApi {
     }
   }
 
+  Future<void> deleteProduct(int id) async {
+    try {
+      await _dio.delete<Map<String, dynamic>>('/products/$id');
+    } on DioException catch (e) {
+      throw mapDioException(e);
+    }
+  }
+
   Future<List<CategoryDto>> getCategories() async {
     try {
       final response = await _dio.get<List<dynamic>>('/products/categories');

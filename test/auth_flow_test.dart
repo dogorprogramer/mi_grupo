@@ -48,6 +48,9 @@ class FakeProductsRepository implements ProductsRepository {
 
   @override
   Future<List<Category>> getCategories() async => const [];
+
+  @override
+  Future<void> deleteProduct(int id) async {}
 }
 
 const user = User(

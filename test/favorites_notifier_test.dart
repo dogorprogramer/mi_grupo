@@ -97,4 +97,31 @@ void main() {
     expect(notifier.isFavorite(1), isTrue);
     expect(notifier.isFavorite(2), isTrue);
   });
+
+  test('remove deletes a favorited product and persists', () async {
+    final repository = InMemoryFavoritesRepository();
+    await repository.save([makeProduct(1)]);
+
+    final container = makeContainer(repository: repository);
+    container.read(favoritesStateProvider);
+    await Future<void>.delayed(Duration.zero);
+
+    await container.read(favoritesStateProvider.notifier).remove(makeProduct(1));
+
+    expect(container.read(favoritesStateProvider).isEmpty, isTrue);
+    expect(await repository.load(), isEmpty);
+  });
+
+  test('remove is a no-op for products that are not favorites', () async {
+    final repository = InMemoryFavoritesRepository();
+    await repository.save([makeProduct(1)]);
+
+    final container = makeContainer(repository: repository);
+    container.read(favoritesStateProvider);
+    await Future<void>.delayed(Duration.zero);
+
+    await container.read(favoritesStateProvider.notifier).remove(makeProduct(2));
+
+    expect(container.read(favoritesStateProvider).favorites, hasLength(1));
+  });
 }

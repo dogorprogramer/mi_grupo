@@ -37,6 +37,18 @@ class FavoritesNotifier extends Notifier<FavoritesState> {
     state = FavoritesState(favorites: favorites, isHydrated: true);
     await _repository.save(favorites);
   }
+
+  Future<void> remove(Product product) async {
+    if (!state.isHydrated) {
+      await _hydrate();
+    }
+    final favorites = List<Product>.from(state.favorites);
+    if (favorites.any((p) => p.id == product.id)) {
+      favorites.removeWhere((p) => p.id == product.id);
+      state = FavoritesState(favorites: favorites, isHydrated: true);
+      await _repository.save(favorites);
+    }
+  }
 }
 
 final favoritesStateProvider =

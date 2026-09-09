@@ -34,8 +34,8 @@ local y errores, y tomar decisiones de arquitectura ante información no explíc
 | Favoritos (toggle) | Completado |
 | Favoritos offline/persistentes | Completado |
 | Eliminación de favoritos | Completado |
-| Rol simulado (admin / estándar) con UI condicional | Planificado |
-| Eliminación de producto (admin, simulada) | Planificado |
+| Rol simulado (admin / estándar) con UI condicional | Completado |
+| Eliminación de producto (admin, simulada) | Completado |
 | Perfil de usuario | Planificado |
 
 ## Stack tecnológico
@@ -165,6 +165,23 @@ lib/
 - **Errores**: si la persistencia falla o el dato guardado está corrupto, se tratan de forma
   segura (se ignoran y se muestran estados comprensibles; no se propaga el stack trace).
 
+## Roles simulados y eliminación (FASE 7)
+
+- **Regla de rol**: si el `id` del usuario autenticado (de `GET /auth/me`) es **par** → rol
+  `admin`; si es **impar** → rol `usuario estándar`. La regla está centralizada en el dominio
+  (`User.role`) y la UI consulta `user.role == UserRole.admin` (no hay lógica `id % 2` dispersa).
+- **UI condicional**: en el detalle, el botón **"Eliminar producto"** solo se construye si el
+  usuario es `admin`. Para el usuario estándar el widget **no existe** en el árbol (ni oculto ni
+  deshabilitado).
+- **Eliminación**: `DELETE /products/:id` a través de `ProductsRepository.deleteProduct` →
+  `ProductsApi.deleteProduct`. Con confirmación previa ("¿Eliminar este producto?"), estado de
+  carga (evita doble tap), y mensaje de éxito.
+- **DummyJSON simula**: la API responde éxito en el DELETE pero **no persiste** el cambio; el
+  producto sigue existiendo al recargar. Documentado como limitación de DummyJSON.
+- **Favoritos coherentes**: si el producto eliminado estaba en favoritos, se retira localmente.
+- **Supuesto de la prueba**: la regla par/impar es una simulación (el backend no tiene roles de
+  negocio); se implementa el manejo de UI condicional que evalúa el PDF.
+
 ## Ejecución
 
 Requisitos: Flutter 3.47+ y Android SDK (para el target principal).
@@ -229,7 +246,7 @@ El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
 
 ## Estado del proyecto
 
-**FASE 6 — Persistencia y favoritos offline.** Completada.
+**FASE 7 — Roles, admin y eliminación de productos.** Completada.
 
 - [x] FASE 0 — Análisis y documentación inicial
 - [x] FASE 1 — Bootstrap y arquitectura base
@@ -238,10 +255,10 @@ El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
 - [x] FASE 4 — Búsqueda, categorías y refresh (debounce, filtro por categoría, pull-to-refresh)
 - [x] FASE 5 — Detalle de producto y favoritos
 - [x] FASE 6 — Persistencia/offline de favoritos (shared_preferences)
-- [ ] FASE 7 — Roles y eliminación de productos
+- [x] FASE 7 — Roles, admin y eliminación de productos (simulada)
 - [ ] FASE 8 — Perfil e integración completa
 - [ ] FASE 9 — Errores, lifecycle, calidad y revisión
 - [ ] FASE 10 — Tests
 - [ ] FASE 11 — Documentación final
 
-> **Pendiente:** roles/admin, eliminación de productos, perfil.
+> **Pendiente:** perfil. (Roles, admin y eliminación de productos ya implementados.)

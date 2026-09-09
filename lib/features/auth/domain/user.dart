@@ -1,3 +1,5 @@
+import 'user_role.dart';
+
 class User {
   const User({
     required this.id,
@@ -14,4 +16,6 @@ class User {
   final String lastName;
   final String email;
   final String? image;
+
+  UserRole get role => id.isEven ? UserRole.admin : UserRole.standard;
 }

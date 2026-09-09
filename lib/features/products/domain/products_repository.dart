@@ -12,5 +12,7 @@ abstract class ProductsRepository {
 
   Future<Product> getProductById(int id);
 
+  Future<void> deleteProduct(int id);
+
   Future<List<Category>> getCategories();
 }

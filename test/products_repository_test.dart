@@ -45,6 +45,11 @@ class FakeProductsApi extends ProductsApi {
     if (productError != null) throw productError!;
     return product!;
   }
+
+  @override
+  Future<void> deleteProduct(int id) async {
+    if (productError != null) throw productError!;
+  }
 }
 
 const productDto = ProductDto(
@@ -130,6 +135,31 @@ void main() {
         isA<AppException>()
             .having((e) => e.type, 'type', AppErrorType.notFound)
             .having((e) => e.message, 'message', 'Producto no encontrado.'),
+      ),
+    );
+  });
+
+  test('deleteProduct succeeds', () async {
+    final repository = ProductsRepositoryImpl(FakeProductsApi());
+
+    await expectLater(repository.deleteProduct(1), completes);
+  });
+
+  test('deleteProduct rethrows an AppException', () async {
+    final repository = ProductsRepositoryImpl(
+      FakeProductsApi(
+        productError: const AppException(
+          AppErrorType.server,
+          'Ocurrió un error en el servidor.',
+        ),
+      ),
+    );
+
+    await expectLater(
+      repository.deleteProduct(1),
+      throwsA(
+        isA<AppException>()
+            .having((e) => e.type, 'type', AppErrorType.server),
       ),
     );
   });

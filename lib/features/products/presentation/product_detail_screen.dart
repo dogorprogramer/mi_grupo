@@ -1,19 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_exception.dart';
+import '../../auth/domain/user_role.dart';
+import '../../auth/presentation/current_user_provider.dart';
 import '../../favorites/presentation/favorites_notifier.dart';
 import '../data/products_providers.dart';
 import '../domain/product.dart';
+import 'product_delete_notifier.dart';
 
-class ProductDetailScreen extends ConsumerWidget {
+class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({required this.productId, super.key});
 
   final int productId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final detail = ref.watch(productDetailProvider(productId));
+  ConsumerState<ProductDetailScreen> createState() =>
+      _ProductDetailScreenState();
+}
+
+class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(productDeleteProvider.notifier).reset();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final detail = ref.watch(productDetailProvider(widget.productId));
+    final user = ref.watch(currentUserProvider);
+    final isAdmin = user?.role == UserRole.admin;
+    final deleteState = ref.watch(productDeleteProvider);
+    final isDeleting = deleteState.isDeleting;
+
+    ref.listen(productDeleteProvider, (_, next) {
+      if (next.status == ProductDeleteStatus.success) {
+        _onDeleted();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('Detalle de producto')),
@@ -21,24 +51,70 @@ class ProductDetailScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _DetailError(
           message: _messageFrom(error),
-          onRetry: () => ref.invalidate(productDetailProvider(productId)),
+          onRetry: () => ref.invalidate(productDetailProvider(widget.productId)),
         ),
-        data: (product) => _DetailContent(product: product),
+        data: (product) => _DetailContent(
+          product: product,
+          isAdmin: isAdmin,
+          isDeleting: isDeleting,
+          onDelete: () => _confirmDelete(product),
+        ),
       ),
     );
   }
+
+  Future<void> _confirmDelete(Product product) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Eliminar este producto?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await ref.read(productDeleteProvider.notifier).delete(widget.productId);
+    }
+  }
+
+  void _onDeleted() {
+    if (!mounted) {
+      return;
+    }
+    final product = ref.read(productDetailProvider(widget.productId)).value;
+    if (product != null && ref.read(favoritesStateProvider).isFavorite(product.id)) {
+      ref.read(favoritesStateProvider.notifier).remove(product);
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Producto eliminado.')),
+    );
+    context.pop();
+  }
 }
 
-class _DetailContent extends ConsumerWidget {
-  const _DetailContent({required this.product});
+class _DetailContent extends StatelessWidget {
+  const _DetailContent({
+    required this.product,
+    required this.isAdmin,
+    required this.isDeleting,
+    required this.onDelete,
+  });
 
   final Product product;
+  final bool isAdmin;
+  final bool isDeleting;
+  final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final favoritesState = ref.watch(favoritesStateProvider);
-    final isFavorite = favoritesState.isFavorite(product.id);
-
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -86,11 +162,21 @@ class _DetailContent extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          FilledButton.tonalIcon(
-            onPressed: () => ref.read(favoritesStateProvider.notifier).toggle(product),
-            icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
-            label: Text(isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'),
-          ),
+          _FavoriteButton(product: product),
+          if (isAdmin) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: isDeleting ? null : onDelete,
+              icon: isDeleting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_outline),
+              label: const Text('Eliminar producto'),
+            ),
+          ],
           const SizedBox(height: 16),
           Text('Descripción', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -126,6 +212,24 @@ class _DetailContent extends ConsumerWidget {
 
   Widget _chip(BuildContext context, String label) {
     return Chip(label: Text(label));
+  }
+}
+
+class _FavoriteButton extends ConsumerWidget {
+  const _FavoriteButton({required this.product});
+
+  final Product product;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final favoritesState = ref.watch(favoritesStateProvider);
+    final isFavorite = favoritesState.isFavorite(product.id);
+
+    return FilledButton.tonalIcon(
+      onPressed: () => ref.read(favoritesStateProvider.notifier).toggle(product),
+      icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
+      label: Text(isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'),
+    );
   }
 }
 

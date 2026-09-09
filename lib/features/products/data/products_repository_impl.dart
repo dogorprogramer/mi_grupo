@@ -27,6 +27,11 @@ class ProductsRepositoryImpl implements ProductsRepository {
   }
 
   @override
+  Future<void> deleteProduct(int id) async {
+    await _api.deleteProduct(id);
+  }
+
+  @override
   Future<List<Category>> getCategories() async {
     final categories = await _api.getCategories();
     return categories.map((e) => e.toDomain()).toList();
