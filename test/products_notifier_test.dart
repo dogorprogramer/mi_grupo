@@ -5,7 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mi_grupo/core/errors/app_exception.dart';
 import 'package:mi_grupo/features/products/data/products_providers.dart';
+import 'package:mi_grupo/features/products/domain/category.dart';
 import 'package:mi_grupo/features/products/domain/product.dart';
+import 'package:mi_grupo/features/products/domain/product_query.dart';
 import 'package:mi_grupo/features/products/domain/products_page.dart';
 import 'package:mi_grupo/features/products/domain/products_repository.dart';
 import 'package:mi_grupo/features/products/presentation/products_notifier.dart';
@@ -18,10 +20,18 @@ class FakeProductsRepository implements ProductsRepository {
   bool failNext = false;
   Completer<ProductsPage>? pending;
   int callCount = 0;
+  final List<ProductQuery> queries = [];
+  final List<int> skips = [];
 
   @override
-  Future<ProductsPage> getProducts({required int limit, required int skip}) async {
+  Future<ProductsPage> getProducts({
+    required ProductQuery query,
+    required int limit,
+    required int skip,
+  }) async {
     callCount++;
+    queries.add(query);
+    skips.add(skip);
     if (pending != null) {
       return pending!.future;
     }
@@ -37,6 +47,13 @@ class FakeProductsRepository implements ProductsRepository {
     }
     return pages!.firstWhere((p) => p.skip == skip, orElse: () => pages!.last);
   }
+
+  @override
+  Future<List<Category>> getCategories() async => const [];
+
+  @override
+  Future<Product> getProductById(int id) async =>
+      throw UnimplementedError();
 }
 
 ProductsPage page({required int skip, required int count, required int total}) {
@@ -71,6 +88,8 @@ ProviderContainer makeContainer(FakeProductsRepository repo) {
   return container;
 }
 
+const smartphones = Category(slug: 'smartphones', name: 'Smartphones');
+
 void main() {
   test('loads the first page on build', () async {
     final repo = FakeProductsRepository(pages: [page(skip: 0, count: 20, total: 40)]);
@@ -81,6 +100,7 @@ void main() {
     final state = container.read(productsStateProvider).value!;
     expect(state.products, hasLength(20));
     expect(state.hasMore, isTrue);
+    expect(state.isSearching, isFalse);
   });
 
   test('loadMore appends the next page', () async {
@@ -170,5 +190,121 @@ void main() {
     expect(state.products, hasLength(20));
     expect(state.loadMoreError, 'Error de servidor.');
     expect(state.isLoadingMore, isFalse);
+  });
+
+  test('search queries with the term and resets pagination', () async {
+    final repo = FakeProductsRepository(
+      pages: [page(skip: 0, count: 20, total: 40), page(skip: 20, count: 20, total: 40)],
+    );
+    final container = makeContainer(repo);
+
+    await container.read(productsStateProvider.future);
+    expect(repo.callCount, 1);
+
+    container.read(productsStateProvider.notifier).onSearchChanged('phone');
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    expect(repo.callCount, 2);
+    expect(repo.queries.last.search, 'phone');
+    expect(repo.queries.last.category, isNull);
+    expect(repo.skips.last, 0);
+
+    await container.read(productsStateProvider.notifier).loadMore();
+    expect(repo.queries.last.search, 'phone');
+    expect(repo.skips.last, 20);
+  });
+
+  test('clearing the search returns to the general list', () async {
+    final repo = FakeProductsRepository(pages: [page(skip: 0, count: 20, total: 40)]);
+    final container = makeContainer(repo);
+
+    await container.read(productsStateProvider.future);
+    final notifier = container.read(productsStateProvider.notifier);
+
+    notifier.onSearchChanged('phone');
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    expect(container.read(productsStateProvider).value!.isSearching, isTrue);
+
+    notifier.onSearchChanged('');
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    final state = container.read(productsStateProvider).value!;
+    expect(state.isSearching, isFalse);
+    expect(repo.queries.last.search, isNull);
+    expect(repo.queries.last.category, isNull);
+  });
+
+  test('debounce collapses rapid keystrokes into one request', () async {
+    final repo = FakeProductsRepository(pages: [page(skip: 0, count: 20, total: 40)]);
+    final container = makeContainer(repo);
+
+    await container.read(productsStateProvider.future);
+    final notifier = container.read(productsStateProvider.notifier);
+
+    notifier.onSearchChanged('p');
+    notifier.onSearchChanged('ph');
+    notifier.onSearchChanged('phone');
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    expect(repo.callCount, 2); // initial + one search
+  });
+
+  test('selecting a category queries by category and resets pagination', () async {
+    final repo = FakeProductsRepository(
+      pages: [page(skip: 0, count: 20, total: 40), page(skip: 20, count: 20, total: 40)],
+    );
+    final container = makeContainer(repo);
+
+    await container.read(productsStateProvider.future);
+    final notifier = container.read(productsStateProvider.notifier);
+
+    await notifier.selectCategory(smartphones);
+
+    expect(repo.queries.last.category, 'smartphones');
+    expect(repo.queries.last.search, isNull);
+    expect(repo.skips.last, 0);
+
+    await notifier.loadMore();
+    expect(repo.queries.last.category, 'smartphones');
+    expect(repo.skips.last, 20);
+
+    final state = container.read(productsStateProvider).value!;
+    expect(state.hasCategory, isTrue);
+  });
+
+  test('refresh reloads from skip 0 and keeps the search context', () async {
+    final repo = FakeProductsRepository(
+      pages: [page(skip: 0, count: 20, total: 40), page(skip: 20, count: 20, total: 40)],
+    );
+    final container = makeContainer(repo);
+
+    await container.read(productsStateProvider.future);
+    final notifier = container.read(productsStateProvider.notifier);
+
+    notifier.onSearchChanged('phone');
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    final before = repo.callCount;
+    await notifier.refresh();
+
+    expect(repo.callCount, before + 1);
+    expect(repo.queries.last.search, 'phone');
+    expect(repo.skips.last, 0);
+  });
+
+  test('refresh is a no-op while the first page is loading', () async {
+    final repo = FakeProductsRepository(pages: [page(skip: 0, count: 20, total: 40)]);
+    final container = makeContainer(repo);
+    repo.pending = Completer<ProductsPage>();
+
+    container.read(productsStateProvider);
+    await Future<void>.delayed(Duration.zero);
+
+    final before = repo.callCount;
+    await container.read(productsStateProvider.notifier).refresh();
+    expect(repo.callCount, before);
+
+    repo.pending!.complete(page(skip: 0, count: 20, total: 40));
+    await Future<void>.delayed(Duration.zero);
   });
 }

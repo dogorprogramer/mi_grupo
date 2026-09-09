@@ -8,6 +8,9 @@ import 'package:mi_grupo/features/auth/domain/auth_repository.dart';
 import 'package:mi_grupo/features/auth/domain/user.dart';
 import 'package:mi_grupo/features/auth/presentation/login_screen.dart';
 import 'package:mi_grupo/features/products/data/products_providers.dart';
+import 'package:mi_grupo/features/products/domain/category.dart';
+import 'package:mi_grupo/features/products/domain/product.dart';
+import 'package:mi_grupo/features/products/domain/product_query.dart';
 import 'package:mi_grupo/features/products/domain/products_page.dart';
 import 'package:mi_grupo/features/products/domain/products_repository.dart';
 import 'package:mi_grupo/features/products/presentation/products_screen.dart';
@@ -31,9 +34,20 @@ class FakeAuthRepository implements AuthRepository {
 
 class FakeProductsRepository implements ProductsRepository {
   @override
-  Future<ProductsPage> getProducts({required int limit, required int skip}) async {
+  Future<ProductsPage> getProducts({
+    required ProductQuery query,
+    required int limit,
+    required int skip,
+  }) async {
     return const ProductsPage(products: [], total: 0, skip: 0, limit: 0);
   }
+
+  @override
+  Future<Product> getProductById(int id) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<Category>> getCategories() async => const [];
 }
 
 const user = User(

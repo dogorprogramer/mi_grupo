@@ -26,14 +26,14 @@ local y errores, y tomar decisiones de arquitectura ante información no explíc
 | Logout | Completado |
 | Protección de rutas según sesión | Completado |
 | Listado de productos (pagínado / scroll infinito) | Completado |
-| Búsqueda de productos | Planificado |
-| Filtro por categoría | Planificado |
-| Pull-to-refresh | Planificado |
+| Búsqueda de productos | Completado |
+| Filtro por categoría | Completado |
+| Pull-to-refresh | Completado |
 | Estados de carga / error / vacío | Completado |
-| Detalle de producto | Planificado |
-| Favoritos (toggle) | Planificado |
+| Detalle de producto | Completado |
+| Favoritos (toggle) | Completado |
 | Favoritos offline | Planificado |
-| Eliminación de favoritos | Planificado |
+| Eliminación de favoritos | Completado |
 | Rol simulado (admin / estándar) con UI condicional | Planificado |
 | Eliminación de producto (admin, simulada) | Planificado |
 | Perfil de usuario | Planificado |
@@ -108,7 +108,44 @@ lib/
   carga la página siguiente de forma incremental.
 - **Estados de UI**: carga inicial, error inicial (con reintentar), lista vacía, carga de página
   adicional, error al cargar más (con reintentar) y "no hay más productos".
-- **Modelos tipados**: `Product` y `ProductsPage` (dominio) con DTOs en la capa de datos.
+- **Modelos tipados**: `Product`, `ProductsPage`, `Category` y `ProductQuery` (dominio) con DTOs
+  en la capa de datos.
+
+### Búsqueda, categorías y refresh
+
+- **Búsqueda** (`GET /products/search?q=`): campo de búsqueda en la parte superior. Usa **debounce
+  de 400 ms** para no disparar una request por cada tecla y para evitar condiciones de carrera
+  (se descartan respuestas obsoletas con un contador de generación).
+- **Categorías** (`GET /products/categories`): se consumen de la API (objetos `{slug, name, url}`)
+  y se muestran como chips horizontales. Al seleccionar una, se consulta
+  `GET /products/category/{slug}` de forma remota (paginaça).
+- **Regla búsqueda/categoría**: son mutuamente excluyentes — la última interacción prevalece.
+  Iniciar una búsqueda deselecciona la categoría; elegir una categoría limpia la búsqueda.
+- **Pull-to-refresh**: recarga desde `skip = 0` respetando la búsqueda/categoría activa.
+  Si la primera página ya está cargando, el refresh se ignora (evita duplicados).
+- Cada cambio de contexto (búsqueda/categoría/refresh) reinicia la paginación desde `skip = 0`
+  y recalcula `hasMore`.
+
+## Detalle de producto
+
+- **Endpoint** `GET /products/:id`: al tocar un producto en el listado se navega a
+  `/product/:id`, que consulta el detalle por su identificador (no reutiliza el objeto de la lista).
+- **Ruta** `/product/:id` en GoRouter; se pasa únicamente el `id`.
+- **Estados**: carga, cargado, error (con reintentar) y producto no encontrado (404 →
+  "Producto no encontrado.").
+- **Contenido**: imagen principal, título, precio, rating, stock, categoría, marca, descripción
+  e imágenes adicionales.
+
+## Favoritos
+
+- **En memoria** (Riverpod) en esta fase. La persistencia/offline corresponde a la **FASE 6**.
+- **Fuente de verdad única**: `favoritesStateProvider` (un `Notifier<List<Product>>`); el estado
+  se comparte entre listado, detalle y pantalla de favoritos, por lo que siempre quedan sincronizados.
+- **Toggle** desde el listado (icono de corazón sobre cada tarjeta) y desde el detalle.
+- **Pantalla “Favoritos”** (`/favorites`): lista los productos favoritos, permite quitarlos y
+  navegar a su detalle; estado vacío cuando no hay favoritos.
+- Se usa una abstracción de dominio (`FavoritesRepository`) con implementación en memoria
+  (`InMemoryFavoritesRepository`), lista para persistir en FASE 6.
 
 ## Ejecución
 
@@ -174,14 +211,14 @@ El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
 
 ## Estado del proyecto
 
-**FASE 3 — Listado de productos y paginación.** Completada.
+**FASE 5 — Detalle de producto y favoritos.** Completada.
 
 - [x] FASE 0 — Análisis y documentación inicial
 - [x] FASE 1 — Bootstrap y arquitectura base
 - [x] FASE 2 — Autenticación y sesión (login, token seguro, `/auth/me`, logout, rutas protegidas)
 - [x] FASE 3 — Listado de productos y paginación (infinite scroll, estados de UI)
-- [ ] FASE 4 — Búsqueda, categorías, refresh y estados de UI
-- [ ] FASE 5 — Detalle de producto y favoritos
+- [x] FASE 4 — Búsqueda, categorías y refresh (debounce, filtro por categoría, pull-to-refresh)
+- [x] FASE 5 — Detalle de producto y favoritos (en memoria)
 - [ ] FASE 6 — Persistencia/offline de favoritos
 - [ ] FASE 7 — Roles y eliminación de productos
 - [ ] FASE 8 — Perfil e integración completa
@@ -189,4 +226,5 @@ El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
 - [ ] FASE 10 — Tests
 - [ ] FASE 11 — Documentación final
 
-> Búsqueda, categorías, detalle, favoritos, perfil y roles siguen marcadas como **Planificado**.
+> **Pendiente:** persistencia/offline de favoritos (FASE 6), roles/admin, eliminación de
+> productos, perfil.

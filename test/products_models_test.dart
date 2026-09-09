@@ -1,9 +1,26 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:mi_grupo/features/products/data/models/category_dto.dart';
 import 'package:mi_grupo/features/products/data/models/product_dto.dart';
 import 'package:mi_grupo/features/products/data/models/products_response.dart';
 
 void main() {
+  group('CategoryDto.fromJson', () {
+    test('parses a real DummyJSON category object', () {
+      final json = {
+        'slug': 'beauty',
+        'name': 'Beauty',
+        'url': 'https://dummyjson.com/products/category/beauty',
+      };
+
+      final category = CategoryDto.fromJson(json).toDomain();
+
+      expect(category.slug, 'beauty');
+      expect(category.name, 'Beauty');
+      expect(category.url, 'https://dummyjson.com/products/category/beauty');
+    });
+  });
+
   group('ProductDto.fromJson', () {
     test('parses a real DummyJSON product', () {
       final json = {

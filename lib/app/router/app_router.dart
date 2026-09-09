@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/auth_state.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
+import '../../features/favorites/presentation/favorites_screen.dart';
+import '../../features/products/presentation/product_detail_screen.dart';
 import '../../features/products/presentation/products_screen.dart';
 
 GoRouter createAppRouter({
@@ -22,6 +24,13 @@ GoRouter createAppRouter({
       GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/', builder: (context, state) => const ProductsScreen()),
+      GoRoute(
+        path: '/product/:id',
+        builder: (context, state) => ProductDetailScreen(
+          productId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(path: '/favorites', builder: (context, state) => const FavoritesScreen()),
     ],
   );
 }
