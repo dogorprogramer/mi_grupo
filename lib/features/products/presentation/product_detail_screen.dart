@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_exception.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_dimensions.dart';
+import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/shimmer_box.dart';
 import '../../auth/domain/user_role.dart';
 import '../../auth/presentation/current_user_provider.dart';
 import '../../favorites/presentation/favorites_notifier.dart';
@@ -50,8 +54,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Detalle de producto')),
       body: detail.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _DetailError(
+        loading: () => const _ProductDetailSkeleton(),
+        error: (error, _) => AppErrorView(
           message: _messageFrom(error),
           onRetry: () => ref.invalidate(productDetailProvider(widget.productId)),
         ),
@@ -130,56 +134,71 @@ class _DetailContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final mainImage =
+        product.images.isNotEmpty ? product.images.first : product.thumbnail;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: Image.network(
-                product.images.isNotEmpty ? product.images.first : product.thumbnail,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.image, size: 64),
+          Hero(
+            tag: 'product-image-${product.id}',
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Image.network(
+                  mainImage,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => ColoredBox(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: Icon(
+                      Icons.image_outlined,
+                      size: 64,
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Text(product.title, style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.lg),
+          Text(product.title, style: theme.textTheme.headlineSmall),
+          const SizedBox(height: AppSpacing.sm),
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 '\$${product.price.toStringAsFixed(2)}',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
               ),
-              const SizedBox(width: 12),
-              const Icon(Icons.star, size: 18, color: Colors.amber),
-              const SizedBox(width: 2),
+              const SizedBox(width: AppSpacing.md),
+              const Icon(Icons.star, size: 18, color: AppColors.rating),
+              const SizedBox(width: AppSpacing.xs),
               Text(
                 product.rating.toStringAsFixed(1),
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: theme.textTheme.bodyMedium,
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
               _chip(context, product.category),
               if (product.brand != null) _chip(context, product.brand!),
               _chip(context, 'Stock: ${product.stock}'),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           _FavoriteButton(product: product),
           if (isAdmin) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             OutlinedButton.icon(
               onPressed: isDeleting ? null : onDelete,
               icon: isDeleting
@@ -192,29 +211,35 @@ class _DetailContent extends StatelessWidget {
               label: const Text('Eliminar producto'),
             ),
           ],
-          const SizedBox(height: 16),
-          Text('Descripción', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.lg),
+          Text('Descripción', style: theme.textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
           Text(product.description),
           if (product.images.length > 1) ...[
-            const SizedBox(height: 16),
-            Text('Imágenes', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.lg),
+            Text('Imágenes', style: theme.textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.sm),
             SizedBox(
               height: 96,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: product.images.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(width: AppSpacing.sm),
                 itemBuilder: (context, index) => ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   child: Image.network(
                     product.images[index],
                     width: 96,
                     height: 96,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.image),
+                    errorBuilder: (context, error, stackTrace) => ColoredBox(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: Icon(
+                        Icons.image_outlined,
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -230,6 +255,42 @@ class _DetailContent extends StatelessWidget {
   }
 }
 
+class _ProductDetailSkeleton extends StatelessWidget {
+  const _ProductDetailSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          ShimmerBox(
+            height: 280,
+            borderRadius: BorderRadius.all(Radius.circular(AppRadius.md)),
+          ),
+          SizedBox(height: AppSpacing.lg),
+          ShimmerBox(height: 22, width: 220),
+          SizedBox(height: AppSpacing.sm),
+          ShimmerBox(height: 18, width: 120),
+          SizedBox(height: AppSpacing.lg),
+          ShimmerBox(
+            height: 40,
+            width: 180,
+            borderRadius: BorderRadius.all(Radius.circular(AppRadius.md)),
+          ),
+          SizedBox(height: AppSpacing.lg),
+          ShimmerBox(height: 12),
+          SizedBox(height: AppSpacing.sm),
+          ShimmerBox(height: 12),
+          SizedBox(height: AppSpacing.sm),
+          ShimmerBox(height: 12, width: 200),
+        ],
+      ),
+    );
+  }
+}
+
 class _FavoriteButton extends ConsumerWidget {
   const _FavoriteButton({required this.product});
 
@@ -237,37 +298,13 @@ class _FavoriteButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final favoritesState = ref.watch(favoritesStateProvider);
-    final isFavorite = favoritesState.isFavorite(product.id);
+    final isFavorite = ref.watch(favoritesStateProvider).isFavorite(product.id);
 
     return FilledButton.tonalIcon(
-      onPressed: () => ref.read(favoritesStateProvider.notifier).toggle(product),
+      onPressed: () =>
+          ref.read(favoritesStateProvider.notifier).toggle(product),
       icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
       label: Text(isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'),
-    );
-  }
-}
-
-class _DetailError extends StatelessWidget {
-  const _DetailError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Reintentar')),
-          ],
-        ),
-      ),
     );
   }
 }

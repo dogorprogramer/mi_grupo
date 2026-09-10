@@ -86,9 +86,8 @@ lib/
     └── profile/   (data, domain, presentation)
 ```
 
-> La estructura física se creó en la **FASE 1**. La carpeta `features/auth` se implementó en la
-> **FASE 2** (autenticación y sesión) y `features/products` en la **FASE 3** (listado + paginación).
-> Las carpetas `favorites` y `profile` están preparadas (vacías) para las siguientes fases.
+> Todas las features están implementadas: `auth`, `products`, `favorites` y `profile`.
+> `profile` reutiliza el usuario de `auth` (no necesita data/domain propios).
 
 ## Autenticación
 
@@ -138,15 +137,14 @@ lib/
 
 ## Favoritos
 
-- **En memoria** (Riverpod) en esta fase. La persistencia/offline corresponde a la **FASE 6**.
-- **Fuente de verdad única**: `favoritesStateProvider` (un `Notifier<List<Product>>`); el estado
-  se comparte entre listado, detalle y pantalla de favoritos, por lo que siempre quedan sincronizados.
+- **Fuente de verdad única**: `favoritesStateProvider` (`Notifier<FavoritesState>`); el estado
+  (productos + `isHydrated`) se comparte entre listado, detalle y pantalla de favoritos, por lo que
+  siempre quedan sincronizados.
 - **Toggle** desde el listado (icono de corazón sobre cada tarjeta) y desde el detalle.
 - **Pantalla “Favoritos”** (`/favorites`): lista los productos favoritos, permite quitarlos y
   navegar a su detalle; estado vacío cuando no hay favoritos.
-- Se usa una abstracción de dominio (`FavoritesRepository`) con implementación persistente
-  (`SharedPreferencesFavoritesRepository`) sobre `shared_preferences`; `InMemoryFavoritesRepository`
-  se mantiene como test double.
+- Abstracción de dominio (`FavoritesRepository`) con implementación persistente
+  (`SharedPreferencesFavoritesRepository`); `InMemoryFavoritesRepository` se mantiene como test double.
 
 ### Persistencia y offline de favoritos (FASE 6)
 
@@ -194,6 +192,19 @@ lib/
 - **Sesión**: si no hay usuario autenticado, muestra un estado seguro ("No hay sesión activa.") y
   las rutas protegidas siguen redirigiendo al login.
 - **Sin capa data/domain propia**: al reutilizar `User`/Auth, no se duplican modelos ni repositorios.
+
+## Diseño y tema
+
+- **Design system** en `core/theme/`: `AppTheme` (light/dark), `AppSpacing`/`AppRadius` (tokens) y
+  `AppColors` (colores semánticos: rating y favorito).
+- **Modo claro/oscuro/sistema** con `themeModeProvider`; la preferencia se persiste en
+  `shared_preferences` (clave `AppConstants.themeModeKey`) y se lee al arrancar, por lo que no hay
+  parpadeo de tema. El selector está en la pantalla de **Perfil**.
+- **Widgets reutilizables** en `core/widgets/`: `ShimmerBox` (skeleton nativo, sin dependencias),
+  `AppErrorView` y `AppEmptyView`.
+- **Loading con skeletons** en el grid de productos, categorías, detalle y favoritos. Se mantiene
+  `CircularProgressIndicator` solo para acciones puntuales (login, cargar más, eliminar).
+- **Transición lista → detalle** con `Hero` sobre la imagen del producto.
 
 ## Ejecución
 
@@ -251,8 +262,8 @@ El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
   pruebas de golden/widget más completas.
 - **Offline del catálogo**: cachear el último listado/búsqueda consultado (la prueba solo exige
   offline de favoritos).
-- **Internacionalización (es/en)** y **modo claro/oscuro** (bonus del PDF).
-- **Animaciones sutiles** (skeleton/shimmer) en estados de carga.
+- **Internacionalización (es/en)**.
+- **Animaciones más elaboradas** y transiciones personalizadas adicionales.
 - **Refrescar el perfil** explícitamente desde `/auth/me` bajo demanda y manejo de expiración de
   token de forma global (hoy el 401 se maneja en la restauración de sesión).
 - **APK de release firmado / video demo** como entregables opcionales.
@@ -272,7 +283,7 @@ El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
 
 ## Estado del proyecto
 
-**FASE 8 — Perfil del usuario.** Completada.
+**FASE 10 — Revisión final y preparación de entrega.** Completada.
 
 - [x] FASE 0 — Análisis y documentación inicial
 - [x] FASE 1 — Bootstrap y arquitectura base
@@ -283,8 +294,21 @@ El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
 - [x] FASE 6 — Persistencia/offline de favoritos (shared_preferences)
 - [x] FASE 7 — Roles, admin y eliminación de productos (simulada)
 - [x] FASE 8 — Perfil del usuario (reutiliza `/auth/me`)
-- [ ] FASE 9 — Errores, lifecycle, calidad y revisión
-- [ ] FASE 10 — Tests
-- [ ] FASE 11 — Documentación final
+- [x] FASE 9 — Errores, lifecycle, calidad y revisión
+- [x] FASE 10 — Revisión final y preparación de entrega
 
-> Todas las funcionalidades del PDF están implementadas. Pendientes: fases de calidad/revisión y documentación final.
+> Todos los requisitos **obligatorios** del PDF están implementados. `flutter analyze` limpio,
+> **77 tests** pasando y APK de debug compilando.
+
+## Bonus del PDF
+
+El PDF marca estos puntos como **opcionales**. Estado real:
+
+| Bonus del PDF | Estado |
+|---|---|
+| Pruebas unitarias/widgets de al menos un flujo | **Implementado** (77 tests: auth, products, favorites, roles, profile, tema) |
+| Inyección de dependencias (Riverpod) | **Implementado** (Riverpod como DI/estado) |
+| Modo claro/oscuro | **Implementado** (light/dark/system, persistente) |
+| Animaciones sutiles (shimmer/skeleton) | **Implementado** (skeletons con shimmer nativo) |
+| Soporte offline básico (cache del listado) | No implementado (offline solo de favoritos) |
+| Internacionalización básica (es/en) | No implementado |

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/providers/theme_provider.dart';
+import '../../../core/theme/app_dimensions.dart';
 import '../../auth/domain/user.dart';
 import '../../auth/domain/user_role.dart';
 import '../../auth/presentation/current_user_provider.dart';
@@ -10,48 +12,95 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final user = ref.watch(currentUserProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Perfil')),
       body: user == null
           ? const Center(child: Text('No hay sesión activa.'))
           : ListView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               children: [
                 Center(child: _ProfileAvatar(user: user)),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
                 Center(
                   child: Text(
                     '${user.firstName} ${user.lastName}',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall,
+                    style: theme.textTheme.headlineSmall,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xs),
                 Center(
                   child: Text(
                     user.email,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.person_outline),
-                  title: const Text('Usuario'),
-                  subtitle: Text(user.username),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.badge_outlined),
-                  title: const Text('Rol'),
-                  subtitle: Text(
-                    user.role == UserRole.admin ? 'Administrador' : 'Usuario estándar',
+                const SizedBox(height: AppSpacing.md),
+                Center(child: _RoleChip(role: user.role)),
+                const SizedBox(height: AppSpacing.xl),
+                Card(
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.person_outline),
+                        title: const Text('Usuario'),
+                        subtitle: Text(user.username),
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.badge_outlined),
+                        title: const Text('Rol'),
+                        subtitle: Text(
+                          user.role == UserRole.admin
+                              ? 'Administrador'
+                              : 'Usuario estándar',
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                Text('Apariencia', style: theme.textTheme.titleMedium),
+                const SizedBox(height: AppSpacing.sm),
+                SegmentedButton<ThemeMode>(
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment(
+                      value: ThemeMode.system,
+                      label: Text('Sistema'),
+                    ),
+                    ButtonSegment(value: ThemeMode.light, label: Text('Claro')),
+                    ButtonSegment(value: ThemeMode.dark, label: Text('Oscuro')),
+                  ],
+                  selected: {themeMode},
+                  onSelectionChanged: (selection) => ref
+                      .read(themeModeProvider.notifier)
+                      .setThemeMode(selection.first),
                 ),
               ],
             ),
+    );
+  }
+}
+
+class _RoleChip extends StatelessWidget {
+  const _RoleChip({required this.role});
+
+  final UserRole role;
+
+  @override
+  Widget build(BuildContext context) {
+    final isAdmin = role == UserRole.admin;
+    return Chip(
+      avatar: Icon(isAdmin ? Icons.shield_outlined : Icons.person_outline, size: 16),
+      label: Text(isAdmin ? 'Administrador' : 'Usuario estándar'),
     );
   }
 }

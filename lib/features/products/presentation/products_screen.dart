@@ -3,13 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/app_exception.dart';
+import '../../../core/theme/app_dimensions.dart';
+import '../../../core/widgets/app_empty_view.dart';
+import '../../../core/widgets/app_error_view.dart';
+import '../../../core/widgets/shimmer_box.dart';
 import '../../auth/presentation/auth_notifier.dart';
-import '../../favorites/presentation/favorites_notifier.dart';
 import '../data/products_providers.dart';
 import '../domain/category.dart';
-import '../domain/product.dart';
 import 'products_notifier.dart';
 import 'products_state.dart';
+import 'widgets/product_card.dart';
 
 class ProductsScreen extends ConsumerStatefulWidget {
   const ProductsScreen({super.key});
@@ -73,8 +76,8 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             child: RefreshIndicator(
               onRefresh: () => ref.read(productsStateProvider.notifier).refresh(),
               child: asyncState.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => _ErrorView(
+                loading: () => const _ProductsGridSkeleton(),
+                error: (error, _) => AppErrorView(
                   message: _messageFrom(error),
                   onRetry: () => ref.read(productsStateProvider.notifier).retry(),
                 ),
@@ -97,7 +100,12 @@ class _SearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.xs,
+      ),
       child: ValueListenableBuilder<TextEditingValue>(
         valueListenable: controller,
         builder: (context, value, _) => TextField(
@@ -116,7 +124,6 @@ class _SearchField extends StatelessWidget {
                       onChanged('');
                     },
                   ),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             isDense: true,
           ),
         ),
@@ -140,13 +147,27 @@ class _CategoryFilter extends ConsumerWidget {
     return SizedBox(
       height: 48,
       child: categoriesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          children: List.generate(
+            5,
+            (index) => const Padding(
+              padding: EdgeInsets.only(right: AppSpacing.sm),
+              child: ShimmerBox(
+                width: 88,
+                height: 32,
+                borderRadius: BorderRadius.all(Radius.circular(AppRadius.lg)),
+              ),
+            ),
+          ),
+        ),
         error: (_, _) => _CategoryError(
           onRetry: () => ref.invalidate(categoriesProvider),
         ),
         data: (categories) => ListView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           children: [
             _chip(
               label: 'Todos',
@@ -175,7 +196,7 @@ class _CategoryFilter extends ConsumerWidget {
     required Category? value,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.only(right: AppSpacing.sm),
       child: ChoiceChip(
         label: Text(label),
         selected: selected,
@@ -193,7 +214,7 @@ class _CategoryError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Row(
         children: [
           const Expanded(child: Text('No se pudieron cargar las categorías.')),
@@ -212,13 +233,17 @@ class _ProductsGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (state.isEmpty) {
-      final message = _emptyMessage(state);
       return CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverFillRemaining(
             hasScrollBody: false,
-            child: Center(child: Text(message)),
+            child: AppEmptyView(
+              message: _emptyMessage(state),
+              icon: state.isSearching
+                  ? Icons.search_off
+                  : Icons.inventory_2_outlined,
+            ),
           ),
         ],
       );
@@ -236,16 +261,16 @@ class _ProductsGrid extends ConsumerWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverPadding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.md),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.7,
+                mainAxisSpacing: AppSpacing.md,
+                crossAxisSpacing: AppSpacing.md,
+                childAspectRatio: 0.68,
               ),
               delegate: SliverChildBuilderDelegate(
-                (context, index) => _ProductCard(product: state.products[index]),
+                (context, index) => ProductCard(product: state.products[index]),
                 childCount: state.products.length,
               ),
             ),
@@ -267,6 +292,57 @@ class _ProductsGrid extends ConsumerWidget {
   }
 }
 
+class _ProductsGridSkeleton extends StatelessWidget {
+  const _ProductsGridSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: AppSpacing.md,
+        crossAxisSpacing: AppSpacing.md,
+        childAspectRatio: 0.68,
+      ),
+      itemCount: 6,
+      itemBuilder: (context, index) => const _ProductCardSkeleton(),
+    );
+  }
+}
+
+class _ProductCardSkeleton extends StatelessWidget {
+  const _ProductCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Expanded(
+            child: ShimmerBox(borderRadius: BorderRadius.zero),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                ShimmerBox(height: 12),
+                SizedBox(height: AppSpacing.sm),
+                ShimmerBox(height: 12, width: 80),
+                SizedBox(height: AppSpacing.sm),
+                ShimmerBox(height: 12, width: 48),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Footer extends ConsumerWidget {
   const _Footer({required this.state});
 
@@ -276,17 +352,17 @@ class _Footer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (state.isLoadingMore) {
       return const Padding(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(AppSpacing.lg),
         child: Center(child: CircularProgressIndicator()),
       );
     }
     if (state.loadMoreError != null) {
       return Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
             Text(state.loadMoreError!),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             TextButton(
               onPressed: () => ref.read(productsStateProvider.notifier).loadMore(),
               child: const Text('Reintentar'),
@@ -297,112 +373,11 @@ class _Footer extends ConsumerWidget {
     }
     if (!state.hasMore) {
       return const Padding(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.all(AppSpacing.lg),
         child: Center(child: Text('No hay más productos.')),
       );
     }
-    return const SizedBox(height: 8);
-  }
-}
-
-class _ProductCard extends ConsumerWidget {
-  const _ProductCard({required this.product});
-
-  final Product product;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final favoritesState = ref.watch(favoritesStateProvider);
-    final isFavorite = favoritesState.isFavorite(product.id);
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.push('/product/${product.id}'),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
-                    product.thumbnail,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.image),
-                  ),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: IconButton(
-                      tooltip: isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos',
-                      onPressed: () =>
-                          ref.read(favoritesStateProvider.notifier).toggle(product),
-                      icon: Icon(
-                        isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite ? Colors.red : Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '\$${product.price.toStringAsFixed(2)}',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, size: 14, color: Colors.amber),
-                      const SizedBox(width: 2),
-                      Text(product.rating.toStringAsFixed(1)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Reintentar')),
-          ],
-        ),
-      ),
-    );
+    return const SizedBox(height: AppSpacing.sm);
   }
 }
 

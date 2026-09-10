@@ -6,6 +6,7 @@ class AppConstants {
 
   static const String authTokenKey = 'auth_token';
   static const String favoritesKey = 'favorite_products';
+  static const String themeModeKey = 'theme_mode';
 
   static const Duration connectTimeout = Duration(seconds: 15);
   static const Duration receiveTimeout = Duration(seconds: 15);

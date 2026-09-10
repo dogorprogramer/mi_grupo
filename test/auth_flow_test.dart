@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mi_grupo/app/app.dart';
+import 'package:mi_grupo/app/providers/storage_providers.dart';
 import 'package:mi_grupo/features/auth/data/auth_providers.dart';
 import 'package:mi_grupo/features/auth/domain/auth_repository.dart';
 import 'package:mi_grupo/features/auth/domain/user.dart';
@@ -17,6 +18,8 @@ import 'package:mi_grupo/features/products/domain/product_query.dart';
 import 'package:mi_grupo/features/products/domain/products_page.dart';
 import 'package:mi_grupo/features/products/domain/products_repository.dart';
 import 'package:mi_grupo/features/products/presentation/products_screen.dart';
+
+import 'helpers/test_preferences.dart';
 
 class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({this.restoreResult, this.loginResult});
@@ -64,52 +67,39 @@ const user = User(
   email: 'emily@dummyjson.com',
 );
 
+Future<void> pumpApp(WidgetTester tester, AuthRepository authRepository) async {
+  final preferences = await createTestPreferencesService();
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(authRepository),
+        productsRepositoryProvider.overrideWithValue(FakeProductsRepository()),
+        preferencesServiceProvider.overrideWithValue(preferences),
+      ],
+      child: const MiGrupoApp(),
+    ),
+  );
+}
+
 void main() {
   testWidgets('unauthenticated user is redirected to the login screen', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          authRepositoryProvider.overrideWithValue(
-            FakeAuthRepository(restoreResult: null),
-          ),
-          productsRepositoryProvider.overrideWithValue(FakeProductsRepository()),
-        ],
-        child: const MiGrupoApp(),
-      ),
-    );
+    await pumpApp(tester, FakeAuthRepository(restoreResult: null));
     await tester.pumpAndSettle();
 
     expect(find.byType(LoginScreen), findsOneWidget);
   });
 
   testWidgets('authenticated user lands on the products screen', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          authRepositoryProvider.overrideWithValue(
-            FakeAuthRepository(restoreResult: user),
-          ),
-          productsRepositoryProvider.overrideWithValue(FakeProductsRepository()),
-        ],
-        child: const MiGrupoApp(),
-      ),
-    );
+    await pumpApp(tester, FakeAuthRepository(restoreResult: user));
     await tester.pumpAndSettle();
 
     expect(find.byType(ProductsScreen), findsOneWidget);
   });
 
   testWidgets('login success navigates to the products screen', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          authRepositoryProvider.overrideWithValue(
-            FakeAuthRepository(restoreResult: null, loginResult: user),
-          ),
-          productsRepositoryProvider.overrideWithValue(FakeProductsRepository()),
-        ],
-        child: const MiGrupoApp(),
-      ),
+    await pumpApp(
+      tester,
+      FakeAuthRepository(restoreResult: null, loginResult: user),
     );
     await tester.pumpAndSettle();
 
@@ -125,15 +115,7 @@ void main() {
 
   testWidgets('stays on the login screen while login is in progress', (tester) async {
     final authRepository = SlowLoginAuthRepository();
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          authRepositoryProvider.overrideWithValue(authRepository),
-          productsRepositoryProvider.overrideWithValue(FakeProductsRepository()),
-        ],
-        child: const MiGrupoApp(),
-      ),
-    );
+    await pumpApp(tester, authRepository);
     await tester.pumpAndSettle();
     expect(find.byType(LoginScreen), findsOneWidget);
 

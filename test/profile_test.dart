@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mi_grupo/app/app.dart';
+import 'package:mi_grupo/app/providers/storage_providers.dart';
 import 'package:mi_grupo/features/auth/data/auth_providers.dart';
 import 'package:mi_grupo/features/auth/domain/auth_repository.dart';
 import 'package:mi_grupo/features/auth/domain/user.dart';
@@ -16,6 +17,8 @@ import 'package:mi_grupo/features/products/domain/product_query.dart';
 import 'package:mi_grupo/features/products/domain/products_page.dart';
 import 'package:mi_grupo/features/products/domain/products_repository.dart';
 import 'package:mi_grupo/features/profile/presentation/profile_screen.dart';
+
+import 'helpers/test_preferences.dart';
 
 const userWithImage = User(
   id: 2,
@@ -66,9 +69,13 @@ class FakeProductsRepository implements ProductsRepository {
 }
 
 Future<void> pumpProfile(WidgetTester tester, User? user) async {
+  final preferences = await createTestPreferencesService();
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [currentUserProvider.overrideWithValue(user)],
+      overrides: [
+        currentUserProvider.overrideWithValue(user),
+        preferencesServiceProvider.overrideWithValue(preferences),
+      ],
       child: const MaterialApp(home: ProfileScreen()),
     ),
   );
@@ -111,6 +118,7 @@ void main() {
   });
 
   testWidgets('navigates to the profile from the products screen', (tester) async {
+    final preferences = await createTestPreferencesService();
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -119,6 +127,7 @@ void main() {
           favoritesRepositoryProvider.overrideWithValue(
             InMemoryFavoritesRepository(),
           ),
+          preferencesServiceProvider.overrideWithValue(preferences),
         ],
         child: const MiGrupoApp(),
       ),
