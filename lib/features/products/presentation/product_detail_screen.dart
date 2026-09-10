@@ -119,7 +119,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }
 }
 
-class _DetailContent extends StatelessWidget {
+class _DetailContent extends StatefulWidget {
   const _DetailContent({
     required this.product,
     required this.isAdmin,
@@ -133,10 +133,20 @@ class _DetailContent extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
+  State<_DetailContent> createState() => _DetailContentState();
+}
+
+class _DetailContentState extends State<_DetailContent> {
+  int _selectedImage = 0;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mainImage =
-        product.images.isNotEmpty ? product.images.first : product.thumbnail;
+    final product = widget.product;
+    final images =
+        product.images.isNotEmpty ? product.images : <String>[product.thumbnail];
+    final safeIndex = _selectedImage.clamp(0, images.length - 1);
+    final mainImage = images[safeIndex];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -149,21 +159,72 @@ class _DetailContent extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.md),
               child: AspectRatio(
                 aspectRatio: 1,
-                child: Image.network(
-                  mainImage,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => ColoredBox(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.image_outlined,
-                      size: 64,
-                      color: theme.colorScheme.outline,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: Image.network(
+                    mainImage,
+                    key: ValueKey<String>(mainImage),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => ColoredBox(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: Icon(
+                        Icons.image_outlined,
+                        size: 64,
+                        color: theme.colorScheme.outline,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           ),
+          if (images.length > 1) ...[
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              height: 64,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: images.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(width: AppSpacing.sm),
+                itemBuilder: (context, index) {
+                  final selected = index == safeIndex;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedImage = index),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(
+                          color: selected
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.outlineVariant,
+                          width: 2,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadius.sm - 2),
+                        child: Image.network(
+                          images[index],
+                          width: 64,
+                          height: 64,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              ColoredBox(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            child: Icon(
+                              Icons.image_outlined,
+                              color: theme.colorScheme.outline,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.lg),
           Text(product.title, style: theme.textTheme.headlineSmall),
           const SizedBox(height: AppSpacing.sm),
@@ -197,11 +258,11 @@ class _DetailContent extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           _FavoriteButton(product: product),
-          if (isAdmin) ...[
+          if (widget.isAdmin) ...[
             const SizedBox(height: AppSpacing.md),
             OutlinedButton.icon(
-              onPressed: isDeleting ? null : onDelete,
-              icon: isDeleting
+              onPressed: widget.isDeleting ? null : widget.onDelete,
+              icon: widget.isDeleting
                   ? const SizedBox(
                       width: 16,
                       height: 16,
@@ -215,36 +276,6 @@ class _DetailContent extends StatelessWidget {
           Text('Descripción', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppSpacing.sm),
           Text(product.description),
-          if (product.images.length > 1) ...[
-            const SizedBox(height: AppSpacing.lg),
-            Text('Imágenes', style: theme.textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.sm),
-            SizedBox(
-              height: 96,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: product.images.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(width: AppSpacing.sm),
-                itemBuilder: (context, index) => ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  child: Image.network(
-                    product.images[index],
-                    width: 96,
-                    height: 96,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => ColoredBox(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: Icon(
-                        Icons.image_outlined,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );

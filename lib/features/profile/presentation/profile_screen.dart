@@ -23,28 +23,33 @@ class ProfileScreen extends ConsumerWidget {
           : ListView(
               padding: const EdgeInsets.all(AppSpacing.lg),
               children: [
-                Center(child: _ProfileAvatar(user: user)),
-                const SizedBox(height: AppSpacing.lg),
-                Center(
-                  child: Text(
-                    '${user.firstName} ${user.lastName}',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineSmall,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Center(
-                  child: Text(
-                    user.email,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Column(
+                      children: [
+                        _ProfileAvatar(user: user),
+                        const SizedBox(height: AppSpacing.lg),
+                        Text(
+                          '${user.firstName} ${user.lastName}',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          user.email,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Center(child: _RoleChip(role: user.role)),
                 const SizedBox(height: AppSpacing.xl),
+                Text('Cuenta', style: theme.textTheme.titleMedium),
+                const SizedBox(height: AppSpacing.sm),
                 Card(
                   child: Column(
                     children: [
@@ -69,38 +74,34 @@ class ProfileScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.xl),
                 Text('Apariencia', style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppSpacing.sm),
-                SegmentedButton<ThemeMode>(
-                  showSelectedIcon: false,
-                  segments: const [
-                    ButtonSegment(
-                      value: ThemeMode.system,
-                      label: Text('Sistema'),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: SegmentedButton<ThemeMode>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(
+                          value: ThemeMode.system,
+                          label: Text('Sistema'),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.light,
+                          label: Text('Claro'),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.dark,
+                          label: Text('Oscuro'),
+                        ),
+                      ],
+                      selected: {themeMode},
+                      onSelectionChanged: (selection) => ref
+                          .read(themeModeProvider.notifier)
+                          .setThemeMode(selection.first),
                     ),
-                    ButtonSegment(value: ThemeMode.light, label: Text('Claro')),
-                    ButtonSegment(value: ThemeMode.dark, label: Text('Oscuro')),
-                  ],
-                  selected: {themeMode},
-                  onSelectionChanged: (selection) => ref
-                      .read(themeModeProvider.notifier)
-                      .setThemeMode(selection.first),
+                  ),
                 ),
               ],
             ),
-    );
-  }
-}
-
-class _RoleChip extends StatelessWidget {
-  const _RoleChip({required this.role});
-
-  final UserRole role;
-
-  @override
-  Widget build(BuildContext context) {
-    final isAdmin = role == UserRole.admin;
-    return Chip(
-      avatar: Icon(isAdmin ? Icons.shield_outlined : Icons.person_outline, size: 16),
-      label: Text(isAdmin ? 'Administrador' : 'Usuario estándar'),
     );
   }
 }

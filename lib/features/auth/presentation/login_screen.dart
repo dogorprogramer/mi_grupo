@@ -96,13 +96,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     return null;
                   },
                 ),
-                if (errorMessage != null) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    errorMessage,
-                    style: TextStyle(color: theme.colorScheme.error),
-                  ),
-                ],
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: errorMessage == null
+                      ? const SizedBox.shrink()
+                      : Padding(
+                          key: const ValueKey('login-error'),
+                          padding: const EdgeInsets.only(top: AppSpacing.lg),
+                          child: Text(
+                            errorMessage,
+                            style: TextStyle(color: theme.colorScheme.error),
+                          ),
+                        ),
+                ),
                 const SizedBox(height: AppSpacing.xl),
                 FilledButton(
                   onPressed: isLoading ? null : _submit,

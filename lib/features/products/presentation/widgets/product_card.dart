@@ -105,12 +105,20 @@ class _FavoriteButton extends ConsumerWidget {
       tooltip: isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos',
       onPressed: () =>
           ref.read(favoritesStateProvider.notifier).toggle(product),
-      iconSize: 20,
-      color: isFavorite ? AppColors.favorite : theme.colorScheme.onSurface,
       style: IconButton.styleFrom(
         backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.85),
       ),
-      icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
+      icon: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        transitionBuilder: (child, animation) =>
+            ScaleTransition(scale: animation, child: child),
+        child: Icon(
+          isFavorite ? Icons.favorite : Icons.favorite_border,
+          key: ValueKey<bool>(isFavorite),
+          size: 20,
+          color: isFavorite ? AppColors.favorite : theme.colorScheme.onSurface,
+        ),
+      ),
     );
   }
 }

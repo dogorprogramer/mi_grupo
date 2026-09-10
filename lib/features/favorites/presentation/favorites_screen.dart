@@ -18,22 +18,27 @@ class FavoritesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Favoritos')),
-      body: !favoritesState.isHydrated
-          ? const _FavoritesSkeleton()
-          : favoritesState.isEmpty
-              ? const AppEmptyView(
-                  message: 'No tienes favoritos.',
-                  icon: Icons.favorite_border,
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  itemCount: favoritesState.favorites.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: AppSpacing.sm),
-                  itemBuilder: (context, index) => _FavoriteTile(
-                    product: favoritesState.favorites[index],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        child: !favoritesState.isHydrated
+            ? const _FavoritesSkeleton(key: ValueKey('favorites-skeleton'))
+            : favoritesState.isEmpty
+                ? const AppEmptyView(
+                    key: ValueKey('favorites-empty'),
+                    message: 'No tienes favoritos.',
+                    icon: Icons.favorite_border,
+                  )
+                : ListView.separated(
+                    key: const ValueKey('favorites-list'),
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    itemCount: favoritesState.favorites.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: AppSpacing.sm),
+                    itemBuilder: (context, index) => _FavoriteTile(
+                      product: favoritesState.favorites[index],
+                    ),
                   ),
-                ),
+      ),
     );
   }
 }
@@ -108,7 +113,7 @@ class _FavoriteTile extends ConsumerWidget {
 }
 
 class _FavoritesSkeleton extends StatelessWidget {
-  const _FavoritesSkeleton();
+  const _FavoritesSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {

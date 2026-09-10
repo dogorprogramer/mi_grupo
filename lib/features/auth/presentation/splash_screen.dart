@@ -14,7 +14,17 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.groups, size: 64, color: theme.colorScheme.primary),
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0, end: 1),
+              duration: const Duration(milliseconds: 400),
+              builder: (context, value, child) =>
+                  Opacity(opacity: value, child: child),
+              child: Icon(
+                Icons.groups,
+                size: 64,
+                color: theme.colorScheme.primary,
+              ),
+            ),
             const SizedBox(height: AppSpacing.lg),
             Text('MiGrupo', style: theme.textTheme.headlineSmall),
             const SizedBox(height: AppSpacing.xl),

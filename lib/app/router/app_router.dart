@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -27,8 +27,29 @@ GoRouter createAppRouter({
       GoRoute(path: '/', builder: (context, state) => const ProductsScreen()),
       GoRoute(
         path: '/product/:id',
-        builder: (context, state) => ProductDetailScreen(
-          productId: int.tryParse(state.pathParameters['id'] ?? '') ?? -1,
+        pageBuilder: (context, state) => CustomTransitionPage<void>(
+          key: state.pageKey,
+          transitionDuration: const Duration(milliseconds: 250),
+          reverseTransitionDuration: const Duration(milliseconds: 200),
+          child: ProductDetailScreen(
+            productId: int.tryParse(state.pathParameters['id'] ?? '') ?? -1,
+          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final curved = CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            );
+            return FadeTransition(
+              opacity: curved,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.03),
+                  end: Offset.zero,
+                ).animate(curved),
+                child: child,
+              ),
+            );
+          },
         ),
       ),
       GoRoute(path: '/favorites', builder: (context, state) => const FavoritesScreen()),
