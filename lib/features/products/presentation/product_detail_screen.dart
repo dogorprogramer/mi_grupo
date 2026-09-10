@@ -42,6 +42,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     ref.listen(productDeleteProvider, (_, next) {
       if (next.status == ProductDeleteStatus.success) {
         _onDeleted();
+      } else if (next.status == ProductDeleteStatus.failure) {
+        _onDeleteFailed(next.errorMessage);
       }
     });
 
@@ -97,6 +99,19 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       const SnackBar(content: Text('Producto eliminado.')),
     );
     context.pop();
+  }
+
+  void _onDeleteFailed(String? message) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message ?? 'No fue posible eliminar el producto. Intenta nuevamente.',
+        ),
+      ),
+    );
   }
 }
 

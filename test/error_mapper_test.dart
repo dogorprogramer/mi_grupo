@@ -47,5 +47,21 @@ void main() {
       expect(result.type, AppErrorType.badRequest);
       expect(result.message, isNot(contains('400')));
     });
+
+    test('does not leak the status code for unmapped responses', () {
+      final e = DioException(
+        requestOptions: RequestOptions(path: '/products'),
+        type: DioExceptionType.badResponse,
+        response: Response(
+          requestOptions: RequestOptions(path: '/products'),
+          statusCode: 403,
+        ),
+      );
+
+      final result = mapDioException(e);
+
+      expect(result.type, AppErrorType.unexpected);
+      expect(result.message, isNot(contains('403')));
+    });
   });
 }

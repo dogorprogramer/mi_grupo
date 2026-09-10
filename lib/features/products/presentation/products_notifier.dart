@@ -18,6 +18,7 @@ class ProductsNotifier extends AsyncNotifier<ProductsState> {
   String _searchQuery = '';
   Category? _category;
   int _generation = 0;
+  bool _isRefreshing = false;
   Timer? _debounce;
 
   ProductQuery get _query => ProductQuery(
@@ -61,9 +62,10 @@ class ProductsNotifier extends AsyncNotifier<ProductsState> {
   Future<void> retry() => _reload();
 
   Future<void> refresh() async {
-    if (state is AsyncLoading) {
+    if (_isRefreshing || state is AsyncLoading) {
       return;
     }
+    _isRefreshing = true;
     final gen = ++_generation;
     _skip = 0;
     try {
@@ -79,12 +81,14 @@ class ProductsNotifier extends AsyncNotifier<ProductsState> {
         const AppException(AppErrorType.unexpected, 'Ocurrió un error inesperado.'),
         StackTrace.current,
       );
+    } finally {
+      _isRefreshing = false;
     }
   }
 
   Future<void> loadMore() async {
     final current = state.value;
-    if (current == null || !current.hasMore || current.isLoadingMore) {
+    if (current == null || !current.hasMore || current.isLoadingMore || _isRefreshing) {
       return;
     }
     final gen = _generation;

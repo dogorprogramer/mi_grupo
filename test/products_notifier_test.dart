@@ -310,4 +310,42 @@ void main() {
     repo.pending!.complete(page(skip: 0, count: 20, total: 40));
     await Future<void>.delayed(Duration.zero);
   });
+
+  test('refresh does not start a second request while one is in progress', () async {
+    final repo = FakeProductsRepository(pages: [page(skip: 0, count: 20, total: 40)]);
+    final container = makeContainer(repo);
+    await container.read(productsStateProvider.future);
+    expect(repo.callCount, 1);
+
+    repo.pending = Completer<ProductsPage>();
+    final first = container.read(productsStateProvider.notifier).refresh();
+    await Future<void>.delayed(Duration.zero);
+    expect(repo.callCount, 2);
+
+    await container.read(productsStateProvider.notifier).refresh();
+    expect(repo.callCount, 2);
+
+    repo.pending!.complete(page(skip: 0, count: 20, total: 40));
+    await first;
+  });
+
+  test('loadMore is ignored while a refresh is in progress', () async {
+    final repo = FakeProductsRepository(
+      pages: [page(skip: 0, count: 20, total: 40), page(skip: 20, count: 20, total: 40)],
+    );
+    final container = makeContainer(repo);
+    await container.read(productsStateProvider.future);
+    expect(repo.callCount, 1);
+
+    repo.pending = Completer<ProductsPage>();
+    final refreshFuture = container.read(productsStateProvider.notifier).refresh();
+    await Future<void>.delayed(Duration.zero);
+    expect(repo.callCount, 2);
+
+    await container.read(productsStateProvider.notifier).loadMore();
+    expect(repo.callCount, 2);
+
+    repo.pending!.complete(page(skip: 0, count: 20, total: 40));
+    await refreshFuture;
+  });
 }

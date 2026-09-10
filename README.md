@@ -243,6 +243,19 @@ El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
 - La API no maneja roles de negocio reales; el rol se simula por paridad de `id`.
 - `flutter_secure_storage` tiene soporte limitado en plataformas de escritorio/web.
 - La búsqueda y el filtro por categoría pueden comportarse distinto al listado general; se valida en cada fase.
+- El offline cubre **solo favoritos**; el catálogo/búsqueda siguen requiriendo conexión.
+
+## Qué haría distinto con más tiempo
+
+- **Testing**: pruebas de integración end-to-end (login → listado → detalle → favorito → eliminar) y
+  pruebas de golden/widget más completas.
+- **Offline del catálogo**: cachear el último listado/búsqueda consultado (la prueba solo exige
+  offline de favoritos).
+- **Internacionalización (es/en)** y **modo claro/oscuro** (bonus del PDF).
+- **Animaciones sutiles** (skeleton/shimmer) en estados de carga.
+- **Refrescar el perfil** explícitamente desde `/auth/me` bajo demanda y manejo de expiración de
+  token de forma global (hoy el 401 se maneja en la restauración de sesión).
+- **APK de release firmado / video demo** como entregables opcionales.
 
 ## Credenciales de prueba
 

@@ -28,7 +28,7 @@ GoRouter createAppRouter({
       GoRoute(
         path: '/product/:id',
         builder: (context, state) => ProductDetailScreen(
-          productId: int.parse(state.pathParameters['id']!),
+          productId: int.tryParse(state.pathParameters['id'] ?? '') ?? -1,
         ),
       ),
       GoRoute(path: '/favorites', builder: (context, state) => const FavoritesScreen()),
@@ -40,7 +40,9 @@ GoRouter createAppRouter({
 String? _resolveRedirect(AsyncValue<AuthState> auth, String location) {
   final state = auth.value;
   if (state == null) {
-    return location == '/splash' ? null : '/splash';
+    // Sesión aún desconocida (restauración inicial o login en curso):
+    // permanecer en splash/login en lugar de forzar una redirección.
+    return (location == '/splash' || location == '/login') ? null : '/splash';
   }
   if (state is AuthAuthenticated) {
     return (location == '/login' || location == '/splash') ? '/' : null;

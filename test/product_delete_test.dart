@@ -172,5 +172,35 @@ void main() {
       expect(find.text('Eliminar producto'), findsNothing);
       expect(find.byIcon(Icons.delete_outline), findsNothing);
     });
+
+    testWidgets('admin sees an error message when delete fails', (tester) async {
+      final repo = FakeDeleteRepository()
+        ..deleteError = const AppException(
+          AppErrorType.server,
+          'Ocurrió un error en el servidor.',
+        );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentUserProvider.overrideWithValue(adminUser),
+            productsRepositoryProvider.overrideWithValue(repo),
+            favoritesRepositoryProvider.overrideWithValue(
+              InMemoryFavoritesRepository(),
+            ),
+          ],
+          child: const MaterialApp(home: ProductDetailScreen(productId: 1)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Eliminar producto'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Eliminar producto'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Eliminar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ocurrió un error en el servidor.'), findsOneWidget);
+    });
   });
 }

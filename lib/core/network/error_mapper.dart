@@ -67,9 +67,9 @@ AppException _mapStatus(int? statusCode) {
         'Ocurrió un error en el servidor.',
       );
     default:
-      return AppException(
+      return const AppException(
         AppErrorType.unexpected,
-        'Ocurrió un error ($statusCode).',
+        'Ocurrió un error inesperado.',
       );
   }
 }
