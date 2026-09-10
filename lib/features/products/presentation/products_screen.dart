@@ -45,6 +45,11 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
         title: const Text('MiGrupo'),
         actions: [
           IconButton(
+            onPressed: () => context.push('/profile'),
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'Perfil',
+          ),
+          IconButton(
             onPressed: () => context.push('/favorites'),
             icon: const Icon(Icons.favorite_border),
             tooltip: 'Favoritos',

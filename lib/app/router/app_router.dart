@@ -8,6 +8,7 @@ import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/favorites/presentation/favorites_screen.dart';
 import '../../features/products/presentation/product_detail_screen.dart';
 import '../../features/products/presentation/products_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
 
 GoRouter createAppRouter({
   required AsyncValue<AuthState> Function() authStateReader,
@@ -31,6 +32,7 @@ GoRouter createAppRouter({
         ),
       ),
       GoRoute(path: '/favorites', builder: (context, state) => const FavoritesScreen()),
+      GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
     ],
   );
 }

@@ -36,7 +36,7 @@ local y errores, y tomar decisiones de arquitectura ante información no explíc
 | Eliminación de favoritos | Completado |
 | Rol simulado (admin / estándar) con UI condicional | Completado |
 | Eliminación de producto (admin, simulada) | Completado |
-| Perfil de usuario | Planificado |
+| Perfil de usuario | Completado |
 
 ## Stack tecnológico
 
@@ -182,6 +182,19 @@ lib/
 - **Supuesto de la prueba**: la regla par/impar es una simulación (el backend no tiene roles de
   negocio); se implementa el manejo de UI condicional que evalúa el PDF.
 
+## Perfil (FASE 8)
+
+- **Pantalla** `/profile` (accesible desde el icono de perfil del AppBar principal).
+- **Fuente de datos**: reutiliza el usuario autenticado que ya se obtiene de `GET /auth/me` durante
+  la restauración de sesión (`AuthAuthenticated.user` → `currentUserProvider`). **No** se hace una
+  llamada adicional a `/auth/me` al abrir el perfil (se evitan requests duplicados).
+- **Muestra**: nombre (`firstName + lastName`), correo, avatar (si existe), usuario y rol.
+- **Avatar**: si `User.image` existe se usa como imagen; si falla o no existe, hay fallback a las
+  iniciales (no rompe la pantalla).
+- **Sesión**: si no hay usuario autenticado, muestra un estado seguro ("No hay sesión activa.") y
+  las rutas protegidas siguen redirigiendo al login.
+- **Sin capa data/domain propia**: al reutilizar `User`/Auth, no se duplican modelos ni repositorios.
+
 ## Ejecución
 
 Requisitos: Flutter 3.47+ y Android SDK (para el target principal).
@@ -246,7 +259,7 @@ El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
 
 ## Estado del proyecto
 
-**FASE 7 — Roles, admin y eliminación de productos.** Completada.
+**FASE 8 — Perfil del usuario.** Completada.
 
 - [x] FASE 0 — Análisis y documentación inicial
 - [x] FASE 1 — Bootstrap y arquitectura base
@@ -256,9 +269,9 @@ El APK se genera en `build/app/outputs/flutter-apk/app-debug.apk`.
 - [x] FASE 5 — Detalle de producto y favoritos
 - [x] FASE 6 — Persistencia/offline de favoritos (shared_preferences)
 - [x] FASE 7 — Roles, admin y eliminación de productos (simulada)
-- [ ] FASE 8 — Perfil e integración completa
+- [x] FASE 8 — Perfil del usuario (reutiliza `/auth/me`)
 - [ ] FASE 9 — Errores, lifecycle, calidad y revisión
 - [ ] FASE 10 — Tests
 - [ ] FASE 11 — Documentación final
 
-> **Pendiente:** perfil. (Roles, admin y eliminación de productos ya implementados.)
+> Todas las funcionalidades del PDF están implementadas. Pendientes: fases de calidad/revisión y documentación final.
